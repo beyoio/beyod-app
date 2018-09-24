@@ -2,7 +2,7 @@
 
 beyod app项目模板
 
-一个高性能分布式、事件驱动、异步非阻塞php socket网络应用框架
+beyod是一个高性能分布式、事件驱动、异步非阻塞php socket网络应用框架
 beyod是基于Libevent/epoll/Yii2 Framework的高性能分布式、事件驱动、异步非阻塞php实现的socket网络服务开发框架。 具备可扩展的网络协议支持架构，可以开发任何TCP/UDP层上的网络应用。可用于物联网、网络游戏、WEB、WebSocket、服务器推送、分布式网络应用服务等领域。
 
 PHP被广泛用于web开发领域，但在socket服务方式较少使用，导致形成了一种错误的观点：PHP只能用于网站。

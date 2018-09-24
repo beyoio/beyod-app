@@ -2,6 +2,18 @@
 
 beyod app项目模板
 
+安装指南：
+1. 使用composer安装
+```
+composer create-project --prefer-dist beyoio/beyod-app beyod-app
+composer update
+```
+2. 下载完整的源码包解压即可
+
+```html
+http://www.beyod.net/dowload
+```
+
 beyod是一个高性能分布式、事件驱动、异步非阻塞php socket网络应用框架
 beyod是基于Libevent/epoll/Yii2 Framework的高性能分布式、事件驱动、异步非阻塞php实现的socket网络服务开发框架。 具备可扩展的网络协议支持架构，可以开发任何TCP/UDP层上的网络应用。可用于物联网、网络游戏、WEB、WebSocket、服务器推送、分布式网络应用服务等领域。
 

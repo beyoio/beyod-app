@@ -4,7 +4,7 @@
   "keywords": ["php sockets","beyod","asynchronous non-blocking"],
   "homepage":"http://www.beyod.net",
   "type": "project",
-  "time": "2017-10-12",
+  "time": "2018-8-12",
   "license": "MIT",
   "minimum-stability":"stable",
   "authors": [{

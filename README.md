@@ -10,8 +10,8 @@ composer update
 ```
 2. 下载完整的源码包解压即可
 
-```html
-http://www.beyod.net/dowload
+```
+https://github.com/beyoio/beyod-app/releases
 ```
 
 beyod是一个高性能分布式、事件驱动、异步非阻塞php socket网络应用框架

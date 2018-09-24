@@ -19,7 +19,6 @@ require __DIR__ . '/vendor/yiisoft/yii2/Yii.php';
 Yii::setAlias('@runtime', __DIR__.'/runtime');
 Yii::setAlias('@app', __DIR__);
 Yii::setAlias('@vendor', __DIR__.'/vendor');
-Yii::setAlias('@beyod', __DIR__.'/vendor/beyod');
 
 $config = require __DIR__ . '/config/main.php';
 

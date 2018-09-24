@@ -1,0 +1,24 @@
+{
+  "name": "beyoio/beyoio",
+  "description": "一个高性能分布式、事件驱动、异步非阻塞php socket网络应用框架. Asynchronous, Event-driven, Nonblocking IO network socket application framework for PHP",
+  "keywords": ["php sockets","beyod","asynchronous non-blocking"],
+  "homepage":"http://www.beyod.net",
+  "type": "project",
+  "time": "2017-10-12",
+  "license": "MIT",
+  "minimum-stability":"stable",
+  "authors": [{
+    "name": "zhangxu",
+    "email": "zhangxugg@163.com",
+    "homepage": "http://www.beyod.net",
+    "role": "Founder"
+  }],
+  "require":{
+    "php": ">=5.6.0",
+    "ext-mbstring":"*",
+    "ext-pcre":"*",
+    "ext-event":"*",
+    "yidas/yii2-composer-bower-skip": "~2.0.0",
+    "yiisoft/yii2":"~2.0.4"
+  }
+}

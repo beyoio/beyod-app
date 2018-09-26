@@ -27,7 +27,7 @@ class ChatHandler extends \beyod\protocol\websocket\Handler
         $users = [];
         
         
-        foreach($event->sender->listenner->connections as $id => $client){
+        foreach($event->sender->listener->connections as $id => $client){
             if($client->isClosed()) continue;
             $users[] = [
                 'id' => $client->getId(),
@@ -39,7 +39,7 @@ class ChatHandler extends \beyod\protocol\websocket\Handler
         
         $resp = new Response(json_encode($data, 320));
         
-        foreach($event->sender->listenner->connections as $client){
+        foreach($event->sender->listener->connections as $client){
             if($client->isClosed()) continue;
             $client->send($resp);
         }
@@ -78,7 +78,7 @@ class ChatHandler extends \beyod\protocol\websocket\Handler
         $resp = new Response(json_encode($data, 320));
         $this->messageid++;
         
-        foreach($event->sender->listenner->connections as $client){
+        foreach($event->sender->listener->connections as $client){
             if($client->isClosed()) continue;
             //if($client->id == $event->sender->id) continue; //不向自己发送
             $client->send($resp);

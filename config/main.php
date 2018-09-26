@@ -28,9 +28,9 @@ $config = [
             'rlimit_nofile' => 65535,//设置系统nofile参数，建议此值为64K以上，以胜任高并发连接环境
             'memory_limit' => '512MB',//重设工作进程的内存上限，默认128M无法容纳大量连接
             //配置网络服务
-            'listenners' => [
+            'listeners' => [
                 'https' => [
-                    'class' => 'beyod\Listenner',
+                    'class' => 'beyod\Listener',
                     'listen' => 'tcp://0.0.0.0:9723',//监听的协议和端口
                     'handler' => [//网络事件回调处理器
                         'class' => 'beyod\protocol\http\Handler',
@@ -67,7 +67,7 @@ $config = [
                 ],
                 
                 'text' => [
-                    'class' => 'beyod\Listenner',
+                    'class' => 'beyod\Listener',
                     'listen' => 'tcp://0.0.0.0:9725',
                     'parser' =>  'beyod\protocol\text\Parser',
                     'handler' => 'beyod\protocol\text\Handler'
@@ -75,7 +75,7 @@ $config = [
                 
                 //订阅服务器
                 'dispatch' => [
-                    'class' => 'beyod\Listenner',
+                    'class' => 'beyod\Listener',
                     'listen' => 'tcp://0.0.0.0:9726',
                     'parser' => 'beyod\dispatcher\Parser',
                     'handler' => 'beyod\dispatcher\Handler'

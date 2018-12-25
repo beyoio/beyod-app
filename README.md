@@ -14,8 +14,8 @@ https://github.com/beyoio/beyod-app/releases
 composer update
 ```
 
-3. 如果github/composer下载过慢，可直接从官方网站下载完整  
-  http://www.beyod.net/download
+3. 如果github/composer下载过慢，可直接下载zip包
+  https://codeload.github.com/beyoio/beyod-app/zip/master
   
 ### 二、启动
 进入项目目录中，执行以下命令运行演示代码：

@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="zh" class="h-100">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+    <link rel="stylesheet" href="assets/css/bootstrap.min.css">
+    <link rel="stylesheet" href="assets/css/style.css">
+
+    <title> Listener 侦听器.md</title>
+  </head>
+  <body class="h-100">
+  <div class="container-fluid h-100 p-2">
+  	<p>listener用于实现端口监听，接受连接， beyod支持单个进程中监听多个端口/多种协议。</p><p>配置文件中server组件listeners就是配置多个Listener组件。</p><p>功能特性：</p><ol><li>支持TCP/UDP/Unix等底层传输层协议。</li><li>支持SSL，可以很容易实现类似https/wss等协议。</li><li>支持自定义协议(parser)，可以实现任何应用层协议支持。</li><li>提供网络事件处理器机制(handler)，可以很容易进行扩展。</li><li>支持reuse port特性，reuseport是一种套接字复用机制，它允许你将多个套接字bind在同一个IP地址/端口对上，这样一来，就可以建立多个服务来接受到同一个端口的连接。</li></ol><p>Linux kernel 3.9开始提供reuse port支持。</p><ol><li>客户端空闲超时检测及切断连接功能：</li></ol><pre><code>//每隔723秒检测一次，如果客户端超过7200秒没有发送有效的数据包，则判定为空闲超时，连接被服务器强制断开，释放资源。
+keepalive_timeout=7200;
+keepalive_interval=723;
+//任何一个值设置为0，则关闭此功能</code></pre><p>客户端连接异常断开（如死机、线路异常、对方程序崩溃）时，TCP连接本身无法感知这种问题，借助空闲连接检测机制，可以很容易释放无效连接，从而及时释放系统资源。</p><ol><li>连接等待超时机制。有时我们希望客户端在tcp建连后必须在规定的时间内发送有效的完整数据包，以避免恶意客户端占用连接资源，listener组件提供了此机制：</li></ol><pre><code>//客户端tcp连接成功后，必须在10秒内发送一个完整的数据包，否则就被断开，默认0禁止此功能。
+accept_timeout=10;</code></pre><ol><li>IPV6支持。</li><li>支持同一个进程中多个listener组件监听。</li><li>支持运行时增加listener:</li></ol><pre><code>\Yii::$app-&gt;server-&gt;addListener($name, $listener)</code></pre><ol><li>支持运行时暂停接入功能：即将客户端的连接事件保留在操作系统backlog缓冲区内。</li></ol><p>backlog是指客户端已经和服务器操作系统完成TCP三次握手，但还没有被应用层调用accept的连接队列。显然backlog的值不能过小。</p><pre><code>\Yii::$app-&gt;server-&gt;getListener($name)-&gt;stopAccept(); //停止接入
+\Yii::$app-&gt;server-&gt;getListener($name)-&gt;startAccept();//启动接入</code></pre><h4>使用指南</h4><p>listener组件最重要的配置就是指定监听的协议和端口、协议解析器、事件处理器：</p><h5>$listen</h5><p>listen属性指定要监听的传输层协议和端口，形式为$scheme://$ip:$port或unix://$socket_file_path形式：</p><pre><code>$scheme取值：tcp udp unix udg ssl tls sslv2 sslv3
+
+$host:$port即为ip地址和端口， 0.0.0.0表示本机所有ip。
+
+当使用ipv6时，ip部分必须使用方括号括起来。
+tcp://[::]:891  表示本机ipv6任何地址的891端口
+
+unix:///tmp/beyod.sock 表示一个unix socket套接字。
+</code></pre><h5>$parser</h5><p>指定当前侦听器的应用层协议解析器, 可以是一个数组或字符串（parser类名），这也是使用了yii的组件化配置风格, 例如配置文件中指定</p><pre><code>'http' =&gt; [
+    'class' =&gt; 'beyod\Listener',
+    'listen' =&gt; 'tcp://0.0.0.0:7725',
+    'parser' =&gt; 'beyod\protocol\http\Parser',
+    'handler' =&gt; [
+        'class'=&gt;'beyod\protocol\http\Handler',
+        'gzip'=&gt;true,
+        'document_root' =&gt; dirname(__DIR__).'/webroot',
+        'callback' =&gt;[
+                '#\.md$#' =&gt; function($event, $req, $res, $path){
+                                $res-&gt;body = Markdown::process(file_get_contents($path), 'gfm-comment');
+                                return true;
+                            },
+                ]
+    ]
+]
+</code></pre><h5>$hanlder</h5><p>指定网络事件处理器组件配置，请参阅 “整体架构”章节。</p><p>总结：如果读者对yii框架较为熟悉，这些都是非常容易理解的配置格式。</p><h5>$connections</h5><p>当前套接字中的所有连接，群发信息时，就很有用：</p><pre><code>foreach(\Yii::$app-&gt;server-&gt;getListener('http')-&gt;connections as $id =&gt; $conn){
+    if($conn-&gt;isClosed()) continue;//跳过已经断开但还未释放的连接
+    $conn-&gt;send($message);
+}</code></pre><h5>$ssl</h5><p>数组格式, 指定ssl套接字的参数，当使用ssl时，就必须设置$ssl属性。</p><p>ssl套接字配置参考：     <br><a href="http://php.net/manual/en/context.ssl.php">http://php.net/manual/en/context.ssl.php</a><br><a href="https://www.devdungeon.com/content/how-use-ssl-sockets-php">https://www.devdungeon.com/content/how-use-ssl-sockets-php</a></p>  </div>
+  <script src="assets/js/jquery.min.js"></script>
+  <script src="assets/js/popper.min.js"></script>
+  <script src="assets/js/bootstrap.min.js"></script>
+
+<script>
+$(function(){
+  var url = self.location;
+  parent.$('a').removeClass('font-weight-bold');
+  parent.$('a[href="9.html"]').addClass('font-weight-bold');
+});
+</script>  
+  
+  </body>
+</html>

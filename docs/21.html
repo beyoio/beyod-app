@@ -1,0 +1,214 @@
+<!doctype html>
+<html lang="zh" class="h-100">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+    <link rel="stylesheet" href="assets/css/bootstrap.min.css">
+    <link rel="stylesheet" href="assets/css/style.css">
+
+    <title>websocket协议.md</title>
+  </head>
+  <body class="h-100">
+  <div class="container-fluid h-100 p-2">
+  	<p>WebSocket协议是基于TCP的一种新的网络协议。它实现了浏览器与服务器全双工(full-duplex)通信——允许服务器主动发送信息给客户端。</p><p>WebSocket通信协议于2011年被IETF定为标准RFC 6455，并被RFC7936所补充规范。</p><p>WebSocket通讯分为握手阶段、二进制通讯阶段。  一个典型的WebSocket握手请求信息:  </p><p>GET /webfin/websocket/ HTTP/1.1</p><p>Host: localhost  <br>Upgrade: websocket  <br>Connection: Upgrade  <br>Sec-WebSocket-Key: xqBt3ImNzJbYqRINxEFlkg==  <br>Origin: <a href="http://referer-url">http://referer-url</a>  <br>Sec-WebSocket-Version: 13  </p><p>服务器响应  <br>HTTP/1.1 101 Switching Protocols  <br>Upgrade: websocket  <br>Connection: Upgrade  <br>Sec-WebSocket-Accept: K7DJLdLooIwIG/MOpvWFB3y3FE8=  </p><p>WebSocket借用http请求进行握手，相比正常的http请求，多了一些内容。其中，  <br>Upgrade: websocket  <br>Connection: Upgrade  <br>表示希望将http协议升级到Websocket协议。<br>Sec-WebSocket-Key是浏览器随机生成的base64 encode的值，用来询问服务器是否是支持WebSocket。 </p><p>服务器返回:  <br>Upgrade: websocket  <br>Connection: Upgrade  </p><p>告诉浏览器即将升级的是Websocket协议。  <br>Sec-WebSocket-Accept是将请求包“Sec-WebSocket-Key”的值，与”258EAFA5-E914-47DA-95CA-C5AB0DC85B11″这个字符串进行拼接，然后对拼接后的字符串进行sha-1运算，再进行base64编码得到的。用来说明自己是WebSocket助理服务器。  </p><p>Sec-WebSocket-Version是WebSocket协议版本号。RFC6455要求使用的版本是13，之前草案的版本均应当被弃用。  </p><p>更多握手规范详见RFC6455。</p><p>beyod内置了WebSocket服务器支持，我们可以快速实现一个WebSocket服务器：</p><h4>配置文件</h4><p>在配置文件config/main.php的server组件的listenners中配置：</p><pre><code>//...
+'listeners' =&gt; [
+    /...
+    'ws' =&gt; [
+        'class' =&gt; 'tcp://0.0.0.0:813',
+        'parser' =&gt; 'beyod\protocol\websocket\Parser',
+        'handler' =&gt; 'beyod\protocol\websocket\Handler',//应该定义自己的handler并重写相关事件方法实现相关业务功能。
+    ]
+]
+</code></pre><p>webosocket的握手功能，已经实现，只需要实现具体的业务事件回调即可：</p><pre><code>&lt;?php
+/**
+ * @link http://www.beyo.io/
+ * @copyright Copyright (c) 2017 Beyo.IO Software Team.
+ * @license http://www.beyo.io/license/
+ */
+
+namespace beyod\protocol\websocket;
+
+use beyod\Connection;
+use beyod\MessageEvent;
+use Yii;
+use beyod\ErrorEvent;
+use beyod\protocol\http\Request as HttpRequest;
+use beyod\protocol\http\Response as HttpResponse;
+
+
+/**
+ * websocket request handler class.
+ * @see http://www.beyo.io/document/class/protocol-websocket
+ * @author zhang xu &lt;zhangxu@beyo.io&gt;
+ * @since 1.0
+ */
+
+class Handler extends \beyod\Handler
+{
+    //http握手阶段完成之后，就需要把客户端的Sec-Key保存，以作好状态登记。
+    public $secKey = 'ws-seckKey';
+    
+    public $magic_code = '258EAFA5-E914-47DA-95CA-C5AB0DC85B11';
+    
+    public $headers = [
+        'Connection' =&gt; 'Upgrade',
+        'Upgrade'   =&gt; 'WebSocket',
+        'Access-Control-Allow-Credentials' =&gt; 'true',
+        'Access-Control-Allow-Headers' =&gt; 'content-type'
+    ];
+    
+    
+    /**
+     * 当收到的客户端数据包时的回调, 根据响应消息的类型，判断是握手或是二进制传输阶段。具体实现请参阅
+     beyod\protocol\websocket\Parser::decode
+     
+     * @param MessageEvent $event
+     * 
+     * @see Parser::decode
+     */
+    public function onMessage(MessageEvent $event){
+        if($event-&gt;message instanceof HttpRequest){
+            return $this-&gt;processHandshake($event);
+        }
+        
+        if(!($event-&gt;message instanceof Request)){
+            Yii::error(&quot;message for &quot;.get_class($this).'::onMessage must be StreamRequest');
+            return ;
+        }
+        
+        return $this-&gt;processStream($event);
+    }
+    
+    /**
+    * 当收到http握手请求时，发送相应的握手响应, 这部分一般无法重写
+    */
+    public function processHandshake(MessageEvent $event)
+    {
+        /** @var \beyod\protocol\http\Request $message */
+        $message = $event-&gt;message;
+        
+        $resp = new HttpResponse(101);
+        foreach($this-&gt;headers as $name =&gt; $value){
+            $resp-&gt;headers-&gt;set($name, $value);
+        }
+        
+        $magicValue = base64_encode(sha1($event-&gt;message-&gt;headers-&gt;get('Sec-Websocket-Key').$this-&gt;magic_code,true));
+        $resp-&gt;headers-&gt;set('Sec-Websocket-Accept', $magicValue);
+        
+        $event-&gt;sender-&gt;setAttribute($this-&gt;secKey, $magicValue);
+        
+        $event-&gt;sender-&gt;send($resp);
+        
+        $this-&gt;onHandshaked($event);
+    }
+    
+    /**
+    * http握手完成之后的回调，如通知其它客户端，或向客户端发送消息。
+    */
+    public function onHandshaked($event)
+    {
+        
+    }
+    
+    /**
+     * 当收到二进制数据包时的回调
+     * 
+     * @param MessageEvent $event
+     */
+    
+    public function processStream($event)
+    {
+        /**
+         * @var Request $event-&gt;message
+         */
+        
+        //控制指令 作相应的响应即可。
+        if($event-&gt;message-&gt;isCtlFrame()) {
+            if($event-&gt;message-&gt;isCloseFrame()) {
+                return $this-&gt;processClose($event);
+            }else if($event-&gt;message-&gt;isPingFrame()){
+                return $this-&gt;processPing($event);
+            }else if($event-&gt;message-&gt;isPongFrame()){
+                return $this-&gt;processPong($event);
+            }
+            
+        }else{
+            return $this-&gt;processData($event);
+        }
+    }
+    
+    /**
+     * 关闭数据包实现
+     * @param MessageEvent $event
+     */
+    public function processClose($event)
+    {
+        $response = new Response();
+        $response-&gt;opcode = Request::OPCODE_CLOSE;
+        return $event-&gt;sender-&gt;close($response);
+    }
+    
+    /**
+     * ping响应
+     * @param MessageEvent $event
+     */
+    public function processPing($event)
+    {
+        $res = new Response();
+        $res-&gt;fin = 1;
+        $res-&gt;opcode = Request::OPCODE_PONG;
+        $res-&gt;mask=0;
+        $res-&gt;payload_len=0;
+        $event-&gt;sender-&gt;send($res);
+    }
+    
+    /**
+     * process pong request
+     * @param MessageEvent $event
+     */
+    public function processPong($event)
+    {
+        
+    }
+    
+    /**
+     * 处理正文数据包，一般需要重写此方法，实现业务功能。
+     * 
+     * @tutorial  $event-&gt;message Request
+     * @tutorial  $event-&gt;message-&gt;body string
+     * @tutorial  $event-&gt;message-&gt;opcode int
+     * 
+     * @param MessageEvent $event
+     */
+    public function processData($event)
+    {
+        
+    }
+    
+    /*
+    * 当发生错误时，可向客户端发送相应的响应。
+    */
+    public function sendErrorResponse(ErrorEvent $event)
+    {
+        if($event-&gt;sender-&gt;hasAttribute($this-&gt;secKey)) {
+            
+        }else{
+            parent::sendErrorResponse($event);
+        }
+    }
+}</code></pre><p>beyodprotocolwebsocketResponse  beyodprotocolwebsocketRequest分别代表了websocket二进制数据包的请求和响应结构封装，它是由Parser的decode方法中返回的值。</p><p>具体可查阅websocket的协议说明。</p>  </div>
+  <script src="assets/js/jquery.min.js"></script>
+  <script src="assets/js/popper.min.js"></script>
+  <script src="assets/js/bootstrap.min.js"></script>
+
+<script>
+$(function(){
+  var url = self.location;
+  parent.$('a').removeClass('font-weight-bold');
+  parent.$('a[href="21.html"]').addClass('font-weight-bold');
+});
+</script>  
+  
+  </body>
+</html>

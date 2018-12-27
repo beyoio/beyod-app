@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="zh" class="h-100">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+    <link rel="stylesheet" href="assets/css/bootstrap.min.css">
+    <link rel="stylesheet" href="assets/css/style.css">
+
+    <title>.md</title>
+  </head>
+  <body class="h-100">
+  <div class="container-fluid h-100 p-2">
+  	<h3>集群架构：与网络服务共存</h3><p>前文已经说明，dispatch server必须以单进程方式运行，才能正常转发消息，这样就导致我们必须单独启动一个beyod serverr实例, 会给部署和运维带来一些麻烦，如果集群规模较小，完全可以让beyod server中同时提供网络服务和dispatcher server, 只需要做简单的操作即可：</p><h4>1. 配置网络服务和dispatcher server：</h4><p>config/main.php</p><pre><code>'components' =&gt; [
+        'server' =&gt; [
+            'class' =&gt; 'app\MyServer', //使用自定义的类
+            'worker_num' =&gt; 17, //1个进程提供dispatcher server, 其16个进程提供网络服务
+            //配置网络服务
+            'listeners' =&gt; [
+                'http' =&gt; [
+                    'class' =&gt; 'beyod\Listener',
+                    'listen' =&gt; 'tcp://0.0.0.0:9723',//监听的协议和端口
+                    'handler' =&gt; [//网络事件回调处理器
+                        'class' =&gt; 'beyod\protocol\http\Handler',
+                        'document_root' =&gt; __DIR__.'/../webroot',
+                    ],
+                    'parser'  =&gt; [
+                        'class'=&gt;'beyod\protocol\http\Parser',
+                    ],
+                ],
+                
+                //订阅服务器
+                'dispatch' =&gt; [
+                    'class' =&gt; 'beyod\Listenner',
+                    'listen' =&gt; 'tcp://0.0.0.0:7724',
+                    'parser' =&gt; 'beyod\dispatcher\Parser',
+                    'handler' =&gt; 'beyod\dispatcher\Handler'
+                ],
+            ],
+        ],
+        
+        //...
+]</code></pre><h4>2. 设置进程的功能角色</h4><p>appMyServer.php</p><pre><code>&lt;?php
+
+namespace app;
+
+use Yii;
+use beyod\Server;
+use beyod\MessageEvent;
+use beyod\IOEvent;
+
+class MyServer extends \beyod\Server
+{
+    public function onWorkerStart($workerId, $GPID)
+    {
+        parent::onWorkerStart($workerId, $GPID);
+        
+        //在第一个进程上，停止所有网络服务，只启动dispater server。
+        if($workerId ==1) {
+            foreach($this-&gt;listenners as $name =&gt; $listenner) {
+                if($name == 'dispatch') continue;
+                $listenner-&gt;stopAccept();
+            }
+        }
+    }
+}</code></pre><p>如此，我们就可以很容易通过进程id设置其功能，对简化部署和运维，会有不少的帮助。</p>  </div>
+  <script src="assets/js/jquery.min.js"></script>
+  <script src="assets/js/popper.min.js"></script>
+  <script src="assets/js/bootstrap.min.js"></script>
+
+<script>
+$(function(){
+  var url = self.location;
+  parent.$('a').removeClass('font-weight-bold');
+  parent.$('a[href="280.html"]').addClass('font-weight-bold');
+});
+</script>  
+  
+  </body>
+</html>

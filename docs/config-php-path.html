@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="zh" class="h-100">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+    <link rel="stylesheet" href="assets/css/bootstrap.min.css">
+    <link rel="stylesheet" href="assets/css/style.css">
+
+    <title>前言</title>
+  </head>
+  <body class="h-100">
+  <div class="container-fluid h-100 p-2">
+  	<h1>配置php到系统PATH环境变量中</h1>
+  	建议把php可执行文件目录加入系统级别PATH环境变量中，这样带来两个好处：
+  	<br>1. 运行php命令时无须带全路径，简化日常操作。
+  	<br>2. crontab/系统脚本执行中避免出错。
+  	<p>1. Linux中的设置</p>
+  	编辑/etc/profile，在最后加入(请按php实际安装路径为准)：<br>
+  	export PATH=$PATH:/usr/local/php/bin
+  	
+  	
+  	<br>然后使用source /etc/profile使修改生效。
+  	
+  	<p>2. windows上的配置</p>
+  	右键点击桌面”此电脑“，属性，高级系统设置、环境变量、然后在系统环境变量中修改Path,添加php.exe所在的目录。
+  	
+  	</div>
+  <script src="assets/js/jquery.min.js"></script>
+  <script src="assets/js/popper.min.js"></script>
+  <script src="assets/js/bootstrap.min.js"></script>
+
+<script>
+$(function(){
+  var url = self.location;
+  parent.$('a').removeClass('font-weight-bold');
+  parent.$('a[href="10.html"]').addClass('font-weight-bold');
+});
+</script>  
+  
+  </body>
+</html>

@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="zh" class="h-100">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+    <link rel="stylesheet" href="assets/css/bootstrap.min.css">
+    <link rel="stylesheet" href="assets/css/style.css">
+
+    <title>.md</title>
+  </head>
+  <body class="h-100">
+  <div class="container-fluid h-100 p-2">
+  	<p>app: 用户自定义的类或其它文件的所在目录，默认的命名空间app就指向此目录，  <br>app/runtime: 日志、pid文件、临时文件目录  <br>app/MyServer.php 框架自带的演示文件，用于扩展server组件的功能  <br>app/ChatHandler.php 框架自带的websocket聊天室处理器。  </p><p>config/main.php 全局配置文件  <br>config/(dev|test|prod)/main.php 针对开发、测试、生产环境的配置文件，beyod启动时，环境相关的配置文件被合并到全局配置文件上，从而更便于实现统一或个性化的配置参数。  </p><p>app/webroot     框架自带的http server的相关文件，用于演示静态/php文件/websocket的功能支持。  <br>app/webroot/upload.php 文件上传及POST数据处理演示  <br>app/webroot/websocket.php websocket群发聊天功能演示，你需要开启多个浏览器窗口操作体验。</p><p>vendor/yiisoft/yii2 yii框架目录  <br>vendor/beyoio/beyod  beyod框架目录  </p><p>beyod.php  beyod的启动文件。</p>  </div>
+  <script src="assets/js/jquery.min.js"></script>
+  <script src="assets/js/popper.min.js"></script>
+  <script src="assets/js/bootstrap.min.js"></script>
+
+<script>
+$(function(){
+  var url = self.location;
+  parent.$('a').removeClass('font-weight-bold');
+  parent.$('a[href="4.html"]').addClass('font-weight-bold');
+});
+</script>  
+  
+  </body>
+</html>

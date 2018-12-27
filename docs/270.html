@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="zh" class="h-100">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+    <link rel="stylesheet" href="assets/css/bootstrap.min.css">
+    <link rel="stylesheet" href="assets/css/style.css">
+
+    <title>集群架构：聊天室</title>
+  </head>
+  <body class="h-100">
+  <div class="container-fluid h-100 p-2">
+  	<h1>集群架构：聊天室</h1>
+  	<p>聊天室中，往往需要涉及到一对一，一对多，群组广播等消息交互方式， 本质上都可以使用发布订阅模式来实现：</p><ol><li>每个用户都有基UID和所在的频道（GPID)。</li><li>用户接入后，应该记录其UID和和GPID对照表，可以使用数据库存储。</li><li>向指定的用户发送消息时，先要根据UID找到对应的频道号，再发送消息至频道即可。</li><li>群组广播形式中，我们可以把群组ID作为频道号，用户加入群组，就是订阅群组频道，我们向群组频道推送消息，那么群组中的用户都可以收到此消息。</li></ol>  </div>
+  <script src="assets/js/jquery.min.js"></script>
+  <script src="assets/js/popper.min.js"></script>
+  <script src="assets/js/bootstrap.min.js"></script>
+
+<script>
+$(function(){
+  var url = self.location;
+  parent.$('a').removeClass('font-weight-bold');
+  parent.$('a[href="270.html"]').addClass('font-weight-bold');
+});
+</script>  
+  
+  </body>
+</html>

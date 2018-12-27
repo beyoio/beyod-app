@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="zh" class="h-100">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+    <link rel="stylesheet" href="assets/css/bootstrap.min.css">
+    <link rel="stylesheet" href="assets/css/style.css">
+
+    <title>SSL TLS加密链接.md</title>
+  </head>
+  <body class="h-100">
+  <div class="container-fluid h-100 p-2">
+  	<p>SSL(Secure Sockets Layer 安全套接层),及其继任者传输层安全（Transport Layer Security，TLS）是为网络通信提供安全及数据完整性的一种安全协议。TLS与SSL在传输层对网络连接进行加密。</p><p>ssl://将根据远程服务器的兼容性和参数设置尝试与之建立 SSL V2 或 SSL V3 链接。 </p><p>sslv2://和 sslv3://将明确的选择 SSL V2 或 SSL V3 协议进行连接。</p><p>一旦涉及SSL/TLS就涉及证书的概念，在SSL/TLS握手阶段，服务器会将自己的证书发送给客户端，客户端可以对证书进行验证，再进入加密通信过程。SSL/TLS握手阶段，是一个非加密通信过程， 后续才会是加密通信过程。</p><p>要配置SSL/TLS第一步是生成证书，证书可以通过第三方权威机构购买，或者自行签发。  <br>注：对我们自行签发的证书，浏览器不信任, 地址栏的加密标志会显示警告信息，可以为客户端手工安装自签名的证书，使它被客户端浏览器信任。</p><h4>1. 生成自签名的证书</h4><p>命令行下运行php脚本，用来生成证书:</p><pre><code>php vendor/beyod/scripts/ssl.php</code></pre><p>将在当前目录生成server.pem, 这就是证书文件, 请复制到config目录下。</p><p>不建议在windows中执行，否则可能遇到未知的错误。</p><h4>2. 配置SSL侦听器</h4><p>config/main.php</p><pre><code>'components' =&gt; [
+    'server'=&gt; [
+        'class' =&gt; 'app\MyServer',
+        'listeners' =&gt; [
+            'server1' =&gt; [
+                'class' =&gt; 'beyod\Listener',
+                'listen' =&gt; 'ssl://0.0.0.0:9723',
+                'handler' =&gt; [
+                    'class' =&gt; 'beyod\protocol\http/Handler',
+                    'document_root' =&gt; __DIR__.'/../app/webroot',
+                ],
+                'parser'  =&gt; 'beyod\protocol\http\Parser',
+                'ssl' =&gt; [
+                    'local_cert' =&gt; __DIR__.'/server.pem', //证书文件路径
+                    'passphrase' =&gt; 'beyodpass',//证书密码
+                    'allow_self_signed'=&gt;true, //允许自签名证书
+                    'verify_peer' =&gt;false //不验证客户端的证书
+                ]
+            ]
+        ]
+    ]
+]</code></pre><h4>3.启动服务，在浏览器中输入：<a href="https://localhost">https://localhost</a>:9723/, 进行测试</h4><h4>4. Websocket SSL</h4><p>即wss协议，加密的websocket协议。利用相同的方法，我们就可以实现wss协议支持。</p>  </div>
+  <script src="assets/js/jquery.min.js"></script>
+  <script src="assets/js/popper.min.js"></script>
+  <script src="assets/js/bootstrap.min.js"></script>
+
+<script>
+$(function(){
+  var url = self.location;
+  parent.$('a').removeClass('font-weight-bold');
+  parent.$('a[href="23.html"]').addClass('font-weight-bold');
+});
+</script>  
+  
+  </body>
+</html>

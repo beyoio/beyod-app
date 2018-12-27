@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="zh" class="h-100">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+    <link rel="stylesheet" href="assets/css/bootstrap.min.css">
+    <link rel="stylesheet" href="assets/css/style.css">
+
+    <title>.md</title>
+  </head>
+  <body class="h-100">
+  <div class="container-fluid h-100 p-2">
+  	<p>Libevent支持文件描述符、信号、定时器三种事件对象，beyod对其进行了封装，使之有一致的调用接口。  </p><p>beyod使用libevent实际毫秒级定时器，一般来说，常用的定时器有两种：一次性定时器、重复定时器，beyod支持这两种定时器：</p><p>一次性定时器：</p><pre><code>$timerid = \Yii::$app-&gt;eventLooper-&gt;addTimemout($interval, $callback, $arg);</code></pre><p>重复定时器：</p><pre><code>$timerid = \Yii::$app-&gt;eventLooper-&gt;addInterval($interval, $callback, $arg);</code></pre><p><strong>$interval</strong><br>定时器的间隔，单位为毫秒。  <br><strong>$callback</strong> 要执行的回调函数， 参数签名为：</p><pre><code>/**
+* @param int $timerid 创建的定时器id
+* @param int $interval 定义定时器时的毫秒间隔
+* @param int $flag  \beyoio\event\EventLooper::EV_TIMEOUT | \beyoio\event\EventLooper::EV_INTERVAL 定时器类型
+* @param mixed $arg 创建定时器时的传递的额外参数
+*/
+function($timerid, $interval, $flag, $arg){
+    
+}</code></pre><p><strong>定时器的取消</strong></p><pre><code>\Yii::$app-&gt;eventLooper-&gt;delTimeout($timerid); //取消已经定义的一次性定时器
+\Yii::$app-&gt;eventLooper-&gt;delInterval($timerid); //取消重复定时器</code></pre><p>==一次性定时器在激活运行后，相关的资源自动被删除，无须调用者手工清理。==</p><p>==重复定时器会周期性执行，一旦运行后，必须由调用者负责资源清理，否则可能造成内存泄露！==</p><p>如Listenner的空闲连接自动清理逻辑, 就使用了定时器：</p><pre><code>public function keepaliveProbe() {
+        if($this-&gt;keepalive_interval &lt;=0 || $this-&gt;keepalive_timeout &lt;=0){
+            return ;
+        }
+        
+        $this-&gt;keepalive_timer = Yii::$app-&gt;eventLooper-&gt;addInterval($this-&gt;keepalive_interval*1000, function($timerId, $interval, $flag, $args=null){
+            $now = microtime(true);
+            Yii::debug(&quot;keepalive probing ...&quot;, 'beyoio');
+            foreach($this-&gt;connections as $id =&gt;$conn){
+                if($conn-&gt;request_at &gt;0 &amp;&amp; $conn-&gt;request_at &lt; ($now - $this-&gt;keepalive_timeout)){
+                    Yii::debug($conn.&quot; keepalive timed out,close it&quot;,'beyoio');
+                    $conn-&gt;close();
+                }
+            }
+        });
+    }
+</code></pre>  </div>
+  <script src="assets/js/jquery.min.js"></script>
+  <script src="assets/js/popper.min.js"></script>
+  <script src="assets/js/bootstrap.min.js"></script>
+
+<script>
+$(function(){
+  var url = self.location;
+  parent.$('a').removeClass('font-weight-bold');
+  parent.$('a[href="16.html"]').addClass('font-weight-bold');
+});
+</script>  
+  
+  </body>
+</html>

@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="zh" class="h-100">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+    <link rel="stylesheet" href="assets/css/bootstrap.min.css">
+    <link rel="stylesheet" href="assets/css/style.css">
+
+    <title>进程控制和平滑重启</title>
+  </head>
+  <body class="h-100">
+  <div class="container-fluid h-100 p-2">
+  	<h1>进程控制和平滑重启</h1>
+  	<p>beyod进程的退出和工作进程重启，可以通过入口命令实现：</p>
+  	<pre><code>php beyod.php server/&lt;stop|reload&gt;
+</code></pre>
+<p>SIGTERM: 当使用kill -p PID时发送的信号即为SIGTERM  
+<br>SIGHUP:  终端挂起时，进程收到此信号，即我们使用&让进程转入后台运行，当关闭终端时，进程收到此信息。  </p>
+<p>beyod的信号类型有两种：退出和平滑重启</p><p><strong>beyod实例的退出：</strong>  
+<br>当master收到SIGINT|SIGTERM|SIGHUP信号时，就向所有worker发送SIGTERM信号，当所有worker退出时，自己再退出。</p>
+<p><strong>beyod的平滑重启(reload)：</strong>  
+<br>当master收到SIGUSR1时，即向worker发送SIGUSR1, worker收到此信号后退出， 然后master再重新派生所有worker, 从而形成平滑重启。</p>
+<p>平滑重启，是指worker在重启时，套接字监听不会被中断，新的客户端仍然可以正常连接。</p><p>但是在旧的worker上建立的tcp连接随着进程的退出而被释放，这时客户端需要重新连接。这个行为和nginx的方式完全一致。</p><p>parser/handler的加载是在worker中，所以当业务代码更新时，只需要平滑重启工作进程即可。  </p><p>但是监听套接字却是在主进程中完成的，如果监听参数变动，必须完全重启beyod实例。</p>  </div>
+  <script src="assets/js/jquery.min.js"></script>
+  <script src="assets/js/popper.min.js"></script>
+  <script src="assets/js/bootstrap.min.js"></script>
+
+<script>
+$(function(){
+  var url = self.location;
+  parent.$('a').removeClass('font-weight-bold');
+  parent.$('a[href="170.html"]').addClass('font-weight-bold');
+});
+</script>  
+  
+  </body>
+</html>

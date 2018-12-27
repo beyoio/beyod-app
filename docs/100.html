@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="zh" class="h-100">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+    <link rel="stylesheet" href="assets/css/bootstrap.min.css">
+    <link rel="stylesheet" href="assets/css/style.css">
+
+    <title> Parser 协议解析器</title>
+  </head>
+  <body class="h-100">
+  <div class="container-fluid h-100 p-2">
+  <h1>Parser 协议解析器</h1>
+  	<p>协议解析器，负责输入字节流的输入解析、数据解包、输出封包。  </p><p>一旦客户端和服务器建立连接之后，就可以双向传输数据流，这时需要parser介入，进行数据流的解析和解包、封包操作，parser的主要工作：  </p>
+  	<ol>
+  		<li>解析客户端发送的数据流，直到收到一个完整的数据包，这个过程称为输入(input)阶段。  </li>
+  		<li>当收到完整的数据包时，对数据包字节流二次组装，转换成我们期待的特殊格式（如构造成Request对象），这个过程称之为解包(decode)阶段。   </li>
+  		<li>当向客户端发送数据时，我们需要将应用层传递的响应内容转换为协议相关的字节流， 这个过程称为封包(encode)阶段。  </li>
+  		<li>在parser运行过程中，如果出现数据包过大，或数据包格式错误，应该抛出异常，由connection处理这种异常情况。
+  		<p class="font-weight-bold">特别注意：beyod会为每个listener创建一个独立的parser对象，而不是为每个连接各自创建parser对象，这基于性能考虑。</p>
+  		</li>
+  		
+  	</ol>
+  	<p><strong>为什么需要数据包解析？</strong>   
+  	<br>针对tcp协议，输入字节是以水流形式源源不断到达服务器的，在服务器没有收到完整的数据包前，是无法处理客户端请求的。所以我们需要协议解析器，找到效数据包的边界。  </p>
+  	<p>udp数据包是有界的，即便同一个客户端发送过来的不同的包，它们之间也是独立的关系（甚至晚发的包先到达）。所以input方法是不必要的, 但是decode和encode却是有意义的。</p>
+  	<p class="font-weight-bold">所有Parser类都应该从beyod\Parser继承，实现自己的数据流处理逻辑。 </p>
+  	
+
+<p>beyod\Parser：</p><pre><code>
+&lt;?php
+
+namespace beyod;
+
+use yii\base\Behavior;
+use yii\base\Object;
+
+use beyod\helpers\Formatter;
+
+class Parser extends Behavior
+{
+	
+    const ERROR_TOO_LARGE_PACKET = 1;
+    const ERROR_BAD_PACKET = 2;
+    
+    /**
+     * @var integer max packet size bytes limitation, 0 menas no limit.
+     * 单个数据包的最大字节数，默认为8MB, 配置时可使用 16M/64K的形式, 如果客户端发送的单个数据包长度大于此值，将触发Handler::onBadPacket回调（此时是否关闭连接，由你确定）  
+如果你实现了自定义的Parser，请勿忘记在input方法中判断数据包长度，以免产生恶意的攻击导致内存耗尽。
+     */
+    public $max_packet_size = 8388608;
+
+    /**
+     * parser对象初始化方法，被构造之后被运行
+     */
+    public function init(){
+        $this-&gt;max_packet_size = Formatter::getBytes($this-&gt;max_packet_size)
+    }
+    
+    /**
+     * 默认的输入判断，只是简单判定了输入数据包是否超出限制，input的返回结果：
+     * 0： 表示还未收到完整的数据，将继续接收并调用input，直到接收完整数据包。
+     * 正数：指明了数据包的字节长度。  
+     * 抛出异常： 数据包错误，当前连接的输入缓冲区被清空，触发Handler::onBadPacket事件。
+     * @param $buffer string
+     * @param $connection Connection 当前的连接，udp是无连接的，不需要数据包边界判断，永远不会调用此方法。
+     */
+    public function input($buffer, $connection)
+    {
+        $len = strlen($buffer);
+        
+        if ($this-&gt;max_packet_size &gt;0 &amp;&amp; $len &gt;= $this-&gt;max_packet_size) {
+            throw new \Exception($connection.' request packet size exceed max_packet_size ', Server::ERROR_LARGE_PACKET);
+        }
+        
+        return $len;
+    }
+    
+     /**
+     * 解包操作，当收到完整的数据包时，可以把字节流转换成我们期待的格式（如Response对象），以便于处理。
+     * 后续将触发 Handler::onMessage()事件。
+     * @param $buffer string
+     * @param $connection Connection 当前的连接，udp是无连接的，此值为null
+     */
+    public function decode($buffer, $connection)
+    {
+        return $buffer;
+    }
+    
+    /**
+    * 当向客户端发送数据时，可以将原始的响应对象转成字节流并附加公共协议字段。
+    * @param $buffer string
+    * @param $connection Connection 当前的连接，udp是无连接的，此值为null
+    */
+    public function encode($buffer, $connection)
+    {
+        return $buffer;
+    } 
+}</code></pre>  </div>
+  <script src="assets/js/jquery.min.js"></script>
+  <script src="assets/js/popper.min.js"></script>
+  <script src="assets/js/bootstrap.min.js"></script>
+
+<script>
+$(function(){
+  var url = self.location;
+  parent.$('a').removeClass('font-weight-bold');
+  parent.$('a[href="100.html"]').addClass('font-weight-bold');
+});
+</script>  
+  
+  </body>
+</html>

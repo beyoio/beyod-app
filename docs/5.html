@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="zh" class="h-100">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+    <link rel="stylesheet" href="assets/css/bootstrap.min.css">
+    <link rel="stylesheet" href="assets/css/style.css">
+
+    <title>.md</title>
+  </head>
+  <body class="h-100">
+  <div class="container-fluid h-100 p-2">
+  	<ol><li>检查并配置php命令的环境变量（此步不是必须的 但建议配置）</li></ol><p>因为beyod是以PHP命令行方式运行的，为了便于操作，请将将php命令加入到系统PATH环境变量中， 具体的方法请自行网络探索吧。</p><ol><li>Linux下切换到beyod.php文件所在目录（windows下需要以管理员身份启动命令提示符运行），以root身份运行以下命令</li></ol><pre><code class="shell">php beyod.php server</code></pre><p>输出：</p><pre><code class="text">Usage: beyod.php server/&lt;start|stop|reload|status|help&gt; [--appconfig=config_file_path]
+
+start:  start server instance
+stop:   stop server instance
+reload: reload server graced
+status: show server running status
+help:   show this help
+--appconfig=path:       customized server configuration file(default config/main.php)
+
+extension status
+        event:  yes
+        posix:  loaded
+        pcntl:  loaded</code></pre><p>命令参数：  <br>start: 启动服务  <br>stop:  停止服务  <br>reload: 平滑重启服务    <br>status: 输出服务运行状态  <br>help:   显示帮助  </p><p>--appconfig=path 指定配置文件（默认配置文件为config/main.php)</p><p>另外，还会输出依赖扩展的加载状态，event是必须的，posix/pcntl不是必须的，但强烈建议安装。</p><p>如果输出没有问题，就可以启动服务</p><pre><code class="shell">php beyod.php server/start
+</code></pre><p>默认配置中，启动4个工作进程，并监听了4个端口 9723/9724/9725/9726，分别提供http/websocket/text echo/dispatcher Server服务，使用以下命令查看端口和进程状态：</p><pre><code class="shell">netstat -ntpl
+
+pstree -Ap</code></pre><p>在浏览器中打开 <a href="http://服务器ip">http://服务器ip</a>:9723/, 即可出现webroot目录的列表，作者作了一些美化，使用紫色主题呈现。默认的配置是启用目录浏览，不过这些都是可以配置的，无须担心。  </p><p>beyod支持在同一个工作进程中监听多个端口。</p><p>因为windows下没有pcntl posix支持，所以无法以守护进程、多个工作进程形式运行，只用于开发调试。</p>  </div>
+  <script src="assets/js/jquery.min.js"></script>
+  <script src="assets/js/popper.min.js"></script>
+  <script src="assets/js/bootstrap.min.js"></script>
+
+<script>
+$(function(){
+  var url = self.location;
+  parent.$('a').removeClass('font-weight-bold');
+  parent.$('a[href="5.html"]').addClass('font-weight-bold');
+});
+</script>  
+  
+  </body>
+</html>

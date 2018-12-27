@@ -1,0 +1,211 @@
+<!doctype html>
+<html lang="zh" class="h-100">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+    <link rel="stylesheet" href="assets/css/bootstrap.min.css">
+    <link rel="stylesheet" href="assets/css/style.css">
+
+    <title> Handler 网络事件处理器.md</title>
+  </head>
+  <body class="h-100">
+  <div class="container-fluid h-100 p-2">
+  	<h3>Handler</h3><p>网络事件处理器，处理各种网络连接事件。</p><p>==注意：beyod会为每个listener创建独立的handler对象，并不是为每个连接创建handler, 这是基于性能的考虑。==</p><p>自定义的handler类，应该从beyoioHandler继承，并覆盖父类事件回调方法，实现自己的业务逻辑。  </p><p>==一般来说，最常用的回调是onMessage, onClose 即收到数据包、连接断开后的业务处理。==</p><p>beyod/Handler.php</p><pre><code>&lt;?php
+
+namespace beyod;
+
+use yii\base\Event;
+use beyod\CloseEvent;
+use beyod\ErrorEvent;
+use beyod\MessageEvent;
+use yii\base\Behavior;
+
+class Handler extends Behavior
+{
+    /**
+     * @var Listenner 所属的Listener对象
+     */
+    public $owner;
+    
+    /**
+    * 当前handler支持的事件回调方法，一般来说，无须覆盖此方法。
+    */
+    public function events()
+    {
+        return [
+            Server::ON_CONNECT =&gt; 'onConnect',
+            Server::ON_MESSAGE =&gt; 'onMessage',
+            Server::ON_CLOSE =&gt; 'onClose',
+            Server::ON_ERROR =&gt; 'onError',
+            Server::ON_BAD_PACKET =&gt; 'onBadPacket',
+            Server::ON_BUFFER_FULL =&gt; 'onBufferFull',
+            Server::ON_BUFFER_DRAIN =&gt; 'onBufferDrain',
+            Server::ON_SSL_HANDSHAKED =&gt; 'onSSLHandShaked',
+            Server::ON_UDP_PACKET =&gt; 'onUdpPacket',
+            Server::ON_START_ACCEPT =&gt; 'onStartAccept',
+            Server::ON_STOP_ACCEPT =&gt; 'onStopAccept',
+        ];
+    }
+    
+    
+    /**
+     * handler对象被构造后调用的初始化方法，根据需要覆盖即可。
+     * @param Event $event
+     */
+    public function init(){}
+    
+    /**
+    * 当handler所属的listenner开始准备接收客户端连接时，此事件被激活。
+    * $event-&gt;sender即指向当前Listennner
+    */
+    public function onStartAccept(Event $event){}
+    
+    
+    /**
+     * 同上，当前handler所属的listenner停止接收客户端连接时，此事件被激活。
+     * @param Event $event
+     */
+    
+    public function onStopAccept(Event $event){}
+    
+    /**
+     * 当收到一个udp数据包时的回调
+     * @param UdpMessageEvent $event
+     $event-&gt;message即为当前数据包内容（具体格式与指定的Parser::decode方法有关）。
+     $event-&gt;sender为当前listenner对象。
+     */
+    public function onUdpPacket(UdpMessageEvent $event){}
+    
+    /**
+     * 当完整的tcp数据包解析成功后的事件回调。
+     * ```php
+     * $connection = $event-&gt;sender; //sender为当前connection对象
+     * $message= $event-&gt;message;    //数据包内容
+     * $connection-&gt;send('hello, your request '.$message);
+     * ```
+     * @param MessageEvent $event
+     */
+    public function onMessage(MessageEvent $event){}
+    
+    
+    /**
+     * 当一个tcp连接建立之后的事件回调, $event-&gt;sender为当前connection对象
+     * ```php
+     * $event-&gt;sender-&gt;send(&quot;hi, provide login: &quot;);
+     * ```
+     * @param IOEvent $event
+     */
+    public function onConnect(IOEvent $event){}
+    
+    /**
+     * 当前tcp连接断开之后的事件回调 $event-&gt;by可以判断连接是被哪一方主动断开的。
+     * ```
+     * $event-&gt;by === CloseEvent::BY_SELF; //closed by self
+     * $event-&gt;by === CloseEvent::BY_PEER; //closed by remote
+     * ```
+     * @example 当前连接断开后，向其它客户端发送通知:
+     * ```
+     foreach($event-&gt;listenner-&gt;connections as $conn) {
+        if($conn-&gt;id == $event-&gt;sender-&gt;id || $conn-&gt;isClosed()) continue;
+        $conn-&gt;send($event-&gt;sender-&gt;id.&quot;&quot;);
+     }
+     *```
+     
+     * @param CloseEvent $event
+     */
+    public function onClose(CloseEvent $event){}
+    
+    
+    /**
+     * 输入输出过程中，出现错误，此事件被激活，一般来说，忽略即可(beyod会自己处理关闭连接)。
+     * ```php
+     * $event-&gt;code; //error code
+     * $event-&gt;errstr; //error messag
+     * $event-&gt;sender; //current connection
+     * ```
+     * @param ErrorEvent $event
+     */
+    public function onError(ErrorEvent $event){
+        \Yii::error($event-&gt;sender.&quot; &quot;.$event-&gt;errstr.&quot; &quot;.$event-&gt;code, 'beyod');
+    }
+    
+    /**
+     * 当数据包无法解析（过大，无法解析，格式错误）时，此事件激活（此时是否关闭连接，取决于你）。
+     * ```php
+     * $event-&gt;code; //error code
+     * $event-&gt;errstr; //error messag
+     * $event-&gt;sender; //current connection
+     * ```
+     * @param ErrorEvent $event
+     */
+    
+    public function onBadPacket(ErrorEvent $event){
+        \Yii::error($event-&gt;sender.' '.$event-&gt;code.' '.$event-&gt;errstr, 'beyoio');
+        $this-&gt;sendErrorResponse($event);
+    }
+    
+    
+    /**
+     * 当前连接的发送缓冲区已满时的事件回调，此时应该暂时发送，以免造成数据包丢失。
+     * 特别是发送大文件时，一定要注意缓冲区耗尽的问题，beyod自带的http server支持大文件（不限大小）下载，可参阅 beyoio\protocol\http\Handler::sendFile()
+     * ```php
+     * $event-&gt;code; //error code
+     * $event-&gt;errstr; //error messag
+     * $event-&gt;sender; //current connection
+     * ```
+     * @param IOEvent $event
+     */
+    public function onBufferFull(IOEvent $event){}
+    
+    /**
+     * 当前连接的发送缓冲区已空时的事件回调。发送大数据包时，应该使用这种方式，防止缓冲区耗尽。
+     * ```php
+     * $event-&gt;code; //error code
+     * $event-&gt;errstr; //error messag
+     * $event-&gt;sender; //current connection
+     * ```
+     * @param IOEvent $event
+     */
+    public function onBufferDrain(IOEvent $event){
+        
+    }
+    
+    /**
+     * 当一个TCP SSL连接握手成功后的回调。一般无须重写此方法。
+     * @param IOEvent $event
+     */
+    public function onSSLHandshaked(IOEvent $event){}
+    
+    
+    /**
+     * 当收到一个错误的数据包时，可以做一些期待的操作（如向客户端发送错误信息），如果要发送错误消息并断开连接：</code></pre><pre><code> $event-&gt;sender-&gt;close('invalid packet');
+ ```
+ * 是否断开连接， 由开发者自行决定，beyod并不会武断地断开连接（而只是清空当前的接收缓冲区）
+ * @param ErrorEvent $event
+ */
+public function sendErrorResponse(ErrorEvent $event)
+{
+    
+}</code></pre><p>}</p><pre><code>
+**connection**
+代表一个tcp连接，最常用的方法就是send, close
+
+一般我们在handler的回调方法完成网络事件处理。
+
+connection重要属性：</code></pre><p>id: int 当前连接的id。beyod使用id重用机制，不会有id不断增长耗尽的问题。当某个连接断开后，它所占用的id就会被后续其它新的连接所使用。<br>connect_at: float 连接建立的时间戳。<br>request_at: float 最新一次完整数据包发送完成的时间戳，0表示还发送数据包。</p><pre><code>
+重要的方法：</code></pre><p>send($message, $raw=false); 向客户端发送数据 $raw==true指明不使用parser的封包操作，而是直接发送。传送大体积消息的中间数据段时，往往就使用使用$raw==true。</p><p>close($message, $raw=false); 向客户端发送数据，然后断开连接</p><p>isClosed(): bool 判断连接是否已经断开，当群发消息时，必须判断没有断开才能发送。</p><p>setAttribute(string $name, mixed $value); 在连接对象上保存一些属性值</p><p>getAttribute(string $name, $default=null); 读取属性值</p><p>比如当客户端验证成功之后，我们可以使用上述方法设置其登录状态数据。</p><p>addFileHandler(string $name, resource $fp); 增加一个文件句柄<br>getFileHandler(string $name); 读取寄存的文件句柄<br>closeFileHandler(string $name); 关闭文件句柄</p><p>运行时，可能需要为当前连接打开一系列文件，但当业务复杂，连接异常断开时，这些文件资源需要及时关闭，否则导致系统资源耗尽，通过使用这种方式，相关的文件资源在连接释放时统一进行关闭，从而提升了进程的稳定性。</p>  </div>
+  <script src="assets/js/jquery.min.js"></script>
+  <script src="assets/js/popper.min.js"></script>
+  <script src="assets/js/bootstrap.min.js"></script>
+
+<script>
+$(function(){
+  var url = self.location;
+  parent.$('a').removeClass('font-weight-bold');
+  parent.$('a[href="11.html"]').addClass('font-weight-bold');
+});
+</script>  
+  
+  </body>
+</html>

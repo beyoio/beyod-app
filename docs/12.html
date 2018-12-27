@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="zh" class="h-100">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+    <link rel="stylesheet" href="assets/css/bootstrap.min.css">
+    <link rel="stylesheet" href="assets/css/style.css">
+
+    <title>Connection TCP连接.md</title>
+  </head>
+  <body class="h-100">
+  <div class="container-fluid h-100 p-2">
+  	<h3>Connection</h3><p>connection表示beyod服务器与客户端的tcp连接封装，是非常重要的概念。</p><p>重要属性：  </p><p><strong>$id</strong>: int 连接号，从1开始编号，只读属性，beyod使用id复用机制，即当连接断开后，其id将被后续的新连接使用，不存在id不断增长导致耗尽的问题。</p><p><strong>$peer</strong>: string 客户端的ip和端口，冒号分隔，只读。</p><p><strong>$local</strong>: string 同上，服务器的地址和端口，只读。</p><p><strong>$listener</strong> beyodListener 当前连接所属的Listener对象，只读。</p><p><strong>$connect_at</strong> float 连接建立的时间戳</p><p><strong>$request_at</strong> float 客户端最后一次发送数据包的时间戳。</p><p><strong>public static $connection</strong>: Connection[] 当前所有连接对象（所有Listenner的连接），键名为连接号，值为连接对象。<br>如果只想列出当前侦听器中的连接，使用以下方式：</p><pre><code>$conns= $connection-&gt;listener-&gt;connections;
+foreach($conns as $id =&gt; $conn) {
+    
+}
+</code></pre><p>方法：</p><p><strong>getClientId setClientId($value)</strong>: 获取/设置客户端标识，比如userid, device id都可以作为客户端标识使用, 一般用于客户端验证之后的状态维持。</p><p><strong>bool send(mixed $message, bool $raw=false)</strong>: 向客户端发送数据，$raw是否发送原始数据（不进行Parser::encode处理）。send发送数据前，会尝试将$message进行Parser::encode处理（除非$raw==true或没有指定Parser）成字节流，再发送给客户端。返回false说明有错误发生（连接已断开、缓存区已满）。send方法调用完毕，并不意味着数据已经到达客户端。</p><p><strong>bool close($message=null, $raw=false)</strong>: 向客户端发送消息后，断开连接。$message==null表示不发送消息而直接断开。 $raw含义同上。</p><p><strong>bool pauseRecv()</strong>: 暂停接收客户端的消息，在需要流控的场景中很有用。</p><p><strong>bool isPaused()</strong>: 检测是否已经暂停接收客户端消息。</p><p><strong>resumeRecv()</strong>: 恢复接收客户端消息。</p><p><strong>bool isClosed()</strong>: 检测当前连接是否已经断开，在群发消息时，应该作判断处理。</p><p><strong>void attr(string $name)</strong>: 获取当前连接的自定义属性值</p><p><strong>void attr(string $name, mixed $value)</strong>: 设置一个自定义属性值</p>  </div>
+  <script src="assets/js/jquery.min.js"></script>
+  <script src="assets/js/popper.min.js"></script>
+  <script src="assets/js/bootstrap.min.js"></script>
+
+<script>
+$(function(){
+  var url = self.location;
+  parent.$('a').removeClass('font-weight-bold');
+  parent.$('a[href="12.html"]').addClass('font-weight-bold');
+});
+</script>  
+  
+  </body>
+</html>

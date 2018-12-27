@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="zh" class="h-100">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+    <link rel="stylesheet" href="assets/css/bootstrap.min.css">
+    <link rel="stylesheet" href="assets/css/style.css">
+
+    <title>安装指南</title>
+  </head>
+  <body class="h-100">
+  <div class="container-fluid h-100 p-2">
+  <h3>安装方法</h3>
+  	<p>以下两种方式均可安装beyod， 选择适合你的方式即可</p>
+  	<ol>
+  	<li>使用composer安装
+  	<p><pre>
+  	<code class="shell">
+composer create-project --prefer-dist beyoio/beyod-app beyod-app
+composer update
+</code>
+</pre></p>
+  	</li>
+  	<li>下载源码包
+  	<p><a href="https://codeload.github.com/beyoio/beyod-app/zip/master">https://codeload.github.com/beyoio/beyod-app/zip/master</a></p>
+  	然后在项目目录中更新依赖
+  	<pre>
+  	<code class="shell">
+composer update
+</code>
+</pre>
+  	</li>
+</ol>
+
+<h3>开发注意事项</h3>
+<ol>
+<li>避免内存溢出
+
+<p>传统的php web编程上，我们无须考虑资源释放的问题，因为php web方式中，资源的创建和销毁都是基于请求的，当请求结束后，所有的资源被释放，程序员一般无须过多考虑此问题。  <br>但beyod是以PHP长驻内存方式运行的，需要考虑到内存释放的问题，静态/全局变量，静态/全局计数器增长，要特别小心，避免无限增长而导致内存溢出或逻辑错误。</p>
+</li>
+
+<li>数据库/缓存/nosql长连接的处理：
+<p>例如mysql has gone away, 因为beyod是以长驻内存方式运行，当连接空闲超时后，将被服务器切换，客户端在一个已经被服务器断开的连接上执行查询，
+就会出现此错误，正确的解决方法是一旦捕获到此异常后，重新连接执行查询即可，beyod内置此支持，配置数据库组件即可：</p>
+<pre>
+<code class="shell">
+#config/main.php
+'db' => [
+            'class' => 'yii\db\Connection',
+            'dsn' => 'mysql:host=localhost;dbname=test;charset=utf8',
+            'username' => 'root',
+            'password' => '',
+            'charset' => 'utf8',
+            'commandClass' => 'beyod\db\Command', //使用此配置，自动处理mysql has gone away之问题。
+        ],
+</code>
+</pre>
+</li>
+
+<li>编程思想上的差别
+
+<p>传统的php web方式编程，是典型的单线程、同步阻塞方式运行，最接近人脑的思维方式，流程简单清晰，使得程序易于编写和理解。<br>但是一旦涉及到异步编程，问题就变得比较复杂，回调函数被调用的顺序是未知的。一个事件的产生，往往伴随着回调函数的触发，回调函数的触发，往往也是因为某个事件产生。所以事件、回调是异步编程的重要概念。</p>
+</li>
+<li>代码健壮性的考虑
+
+<p>传统的php web编程中，可能无须过多考虑运行中异常的问题，即便运行出错，用户刷新浏览器即可。但是在网络程序中，错误/异常/有效性提前检测是一个好习惯，传入数据异常可能就会引起调用出错，从而导致进程崩溃重启，就影响了业务的稳定性。另一方面，这也对程序员提出了更高的要求。</p>
+</li>
+
+<li>异步不是万能的
+<p>业务层的处理，你仍然可以使用同步方式实现（如MySQL的交互）。这使得逻辑的实现更为容易。</li></p>  
+</div>
+
+  <script src="assets/js/jquery.min.js"></script>
+  <script src="assets/js/popper.min.js"></script>
+  <script src="assets/js/bootstrap.min.js"></script>
+
+<script>
+$(function(){
+  var url = self.location;
+  parent.$('a').removeClass('font-weight-bold');
+  parent.$('a[href="30.html"]').addClass('font-weight-bold');
+});
+</script>  
+  
+  </body>
+</html>

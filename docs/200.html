@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="zh" class="h-100">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+    <link rel="stylesheet" href="assets/css/bootstrap.min.css">
+    <link rel="stylesheet" href="assets/css/style.css">
+
+    <title>HTTP服务器.md</title>
+  </head>
+  <body class="h-100">
+  <div class="container-fluid h-100 p-2">
+  	<h1>HTTP服务器</h1>
+  	<p>beyod自带了一个http服务器， 位于beyoioprotocolhttp目录中，支持以下功能：</p>
+  	<ol><li>静态文件服务功能</li><li>支持大文件下载和断点续传</li>
+  	<li>目录列表</li><li>自定义错误页</li><li>索引页面配置</li>
+  	<li>PHP文件解析运行</li><li>支持文件上传</li>
+  	<li>$_GET $_POST $_FILES $_COOKIE $_RAWBODY封装实现</li>
+  	<li>地址重写及拦截器机制</li><li>基于主机名的虚拟主机</li>
+  	<li>gzip压缩输出</li><li>自定义响应Cookie</li>
+  	<li>良好的扩展机制</li></ol>
+  	<h4>1. 配置</h4><p>config/main.php</p><pre><code>
+'components'=&gt;[
+    'server'=&gt;[
+        'listeners'=&gt;[
+            'http' =&gt; [
+                'listen' =&gt; 'tcp://0.0.0.0:80',
+                'parser' =&gt; 'beyod\protocol\http\Parser',
+                'handler' =&gt; [
+                    'class'=&gt;'beyod\protocol\http\Handler',
+                    'document_root' =&gt; dirname(__DIR__).'/../app/webroot', //网站根目录
+                    'gzip' =&gt; true, //启用静态文件gzip压缩
+                    'auto_index' =&gt; true, //启用目录列表
+                    'index' =&gt; ['index.htm', 'index.html', 'index.php'], //索引页
+                    'error_pages' =&gt; [ //定义错误页
+                        '40x' =&gt; __DIR__.'/40x.html',
+                        '400' =&gt; __DIR__.'/400.html',
+                        '50x' =&gt; __DIR__.'/50x.html'
+                    ],
+                    
+                    //地址拦截器机制 .md后缀路径由回调函数处理
+                    /**
+                    * @params $event beyoio\MessageEvent
+                    * @params $req beyoio\protocol\http\Request
+                    * @params $res beyoio\protocol\http\Response
+                    * @params $path request file path
+                    */
+                    'callback' =&gt;[
+                            '#\.md$#' =&gt; function($event, $req, $res, $path){
+                                $res-&gt;body = Markdown::process(file_get_contents($path), 'gfm-comment');
+                                return true; //返回true表示处理完毕，不再匹配后续规则
+                            },
+                        ]
+                ]
+            ]
+        ]
+    ]
+]
+</code></pre><h4>2. php文件的解析</h4>
+<p>在站点根目录下建立php文件就可以自动解析执行之。
+<br>内置了几个特殊变量, 可以在PHP文件中使用：   
+<br>$event beyod\MessageEvent 当前message事件对象
+<br>$request beyod\protocol\http\Request 当前请求消息的封装
+<br>$response beyod\protocol\http\Response 当前响应消息的封装</p>
+<p>几个注意事项：  <br>1. php文件中的输出，将以缓冲区捕获的方式作为响应正文 </p>
+<p>2. 因为beyod是长驻内存方式运行的，php文件中类、函数必须使用自动加载或require_once方式加载，否则会导致函数/类重复载入而造成运行错误</p>
+<p>3. 完全支持数十GB级别大文件的传输和断点续传，实际观测没有内存泄露产生 </p>
+<p>4. 无法在beyod实例上再次运行WEB框架，因为beyod本质是基于命令行的长驻进程，和IIS/Apache/php-fpm运行环境有差别, 而应该直接使用框架实现业务功能。</p>
+</div>
+  <script src="assets/js/jquery.min.js"></script>
+  <script src="assets/js/popper.min.js"></script>
+  <script src="assets/js/bootstrap.min.js"></script>
+
+<script>
+$(function(){
+  var url = self.location;
+  parent.$('a').removeClass('font-weight-bold');
+  parent.$('a[href="200.html"]').addClass('font-weight-bold');
+});
+</script>  
+  
+  </body>
+</html>

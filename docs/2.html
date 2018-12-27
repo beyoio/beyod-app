@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="zh" class="h-100">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+    <link rel="stylesheet" href="assets/css/bootstrap.min.css">
+    <link rel="stylesheet" href="assets/css/style.css">
+
+    <title>.md</title>
+  </head>
+  <body class="h-100">
+  <div class="container-fluid h-100 p-2">
+  	<ol><li>需要php 5.6及以上版本。</li><li>只要能运行php的系统，均可运行（例如windows/linux/unix/freebsd/aix等）。</li><li>需要sockets/event(libevent的OOP封装)扩展支持，<a href="http://pecl.php.net/package/event">http://pecl.php.net/package/event</a></li><li>生产环境中需要pcntl/posix扩展，以便支持守护进程、Master-Worker方式运行, pcntl/posix支持Linux/Unix系统，所以beyod最佳运行环境为Linux/Unix。</li><li>windows环境不支持pcntl posix扩展，只能以单进程方式运行，仅可用于开发调试。</li><li>如果需要SSL，还需要安装openssl扩展。</li></ol>  </div>
+  <script src="assets/js/jquery.min.js"></script>
+  <script src="assets/js/popper.min.js"></script>
+  <script src="assets/js/bootstrap.min.js"></script>
+
+<script>
+$(function(){
+  var url = self.location;
+  parent.$('a').removeClass('font-weight-bold');
+  parent.$('a[href="2.html"]').addClass('font-weight-bold');
+});
+</script>  
+  
+  </body>
+</html>

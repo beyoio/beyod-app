@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="zh" class="h-100">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+    <link rel="stylesheet" href="assets/css/bootstrap.min.css">
+    <link rel="stylesheet" href="assets/css/style.css">
+
+    <title>StreamClient.md</title>
+  </head>
+  <body class="h-100">
+  <div class="container-fluid h-100 p-2">
+  	<p>当beyod server需要和其它服务器交互时, 这时就作为tcp/udp/unix socket客户端，StreamClient提供了此功能支持。</p><h4>特性：</h4><ol><li>支持多种协议tcp/udp/unix socket</li><li>异步非阻塞、事件驱动</li><li>支持自定义协议解析器，理论上可以实现任何协议解析。</li><li>自定义事件回调</li><li>连接保持和断线自动重连机制。</li></ol><h4>　范例：一个异步redis客户端连接</h4><p>一般来说，应该在Server::onWorkerStart或Handler::init方法中初始化StreamClient连接。以下是一个异步Redis连接过程。</p><p>appMyServer</p><pre><code>&lt;?php
+
+namespace app;
+
+use Yii;
+use beyod\Server;
+use beyod\dispatcher\Client;
+use beyod\MessageEvent;
+use beyod\IOEvent;
+use beyod\protocol\redis\Request;
+use beyod\protocol\dns\Message;
+
+class MyServer extends \beyod\Server
+{
+    public $redis_server = 'tcp://192.168.1.19:6379';
+    public $redisClient;
+    
+    public function onWorkerStart($workerId, $GPID)
+    {
+        parent::onWorkerStart($workerId, $GPID);
+        $this-&gt;connectRedisServer(); //工作进程启动后，就开始连接到Redis服务器
+    }
+    
+    protected function connectRedisServer()
+    {
+        //设置连接目标，重连间隔，连接超时时间
+        $options = [
+            'target' =&gt; $this-&gt;redis_server,
+            'reconnect_interval' =&gt; 5, //连接异常断开, 5秒后重连
+            'timeout' =&gt; 10, //连接超时10秒
+        ];
+        
+        //初始化一个连接对象，此时还未开始连接
+        $this-&gt;redisClient = new \beyod\protocol\redis\Client($options);
+        
+        //收到数据时的回调
+        $this-&gt;redisClient-&gt;on(Server::ON_MESSAGE, function($event){
+            /** 
+             * @var MessageEvent $event
+             * @var Request $event-&gt;message  
+             * */
+            print_r($event-&gt;message);
+            
+        });
+        
+        //连接成功之后就可以发送数据了
+        $this-&gt;redisClient-&gt;on(Server::ON_CONNECT, function(IOEvent $event){
+            Yii::debug($event-&gt;sender.' connect ok ');
+            
+            $this-&gt;redisClient-&gt;set('a',serialize($_SERVER));
+            $this-&gt;redisClient-&gt;get('a');
+        });
+        
+        //事件回调成功 开始连接。
+        $this-&gt;redisClient-&gt;connect();
+    }
+}</code></pre><p>beyodStreamClient实现了基础的客户端连接，自定义协议时，应该在此类上扩展实现。</p><h4>StreamClient类参考</h4><p><strong>常量：</strong>  <br>const STATUS_CONNECTING = 1;  <br>正在建立状态</p><p>const STATUS_ESTABLISHED = 2;  <br>连接已经建立</p><p>const STATUS_CLOSED = 1;  <br>连接已经关闭 连接失败，被动关闭或主动关闭</p><p><strong>属性</strong>  <br>static $connections = [];  <br>当前所有StreamClient对象，键名为id, 值为StreamClient对象  </p><p>$reconnect_interval = 0;  <br>连接失败或连接被动关闭时，重新连接间隔秒数，0表示断开后不自动重新连接，此值可以使用小数。</p><p>$options=[];  </p><p>socket创建时的选项，参阅: <a href="http://php.net/manual/en/function.socket-set-option.php">http://php.net/manual/en/function.socket-set-option.php</a></p><p><a href="http://php.net/manual/en/sockets.constants.php">http://php.net/manual/en/sockets.constants.php</a></p><p>键名为选项常量名而不是常量值。  </p><p>默认的选项参数：<br>&lt;pre&gt;<br>'backlog' =&gt; 256,  //tcp连接队列值<br>'SO_REUSEADDR' =&gt; 1, //重用已经断开的连接5元组，对需要建立大量短连接的客户端，必须设置此值<br>'SO_KEEPALIVE' =&gt; 1,  //启用系统内核层的tcp keepalive机制<br>'SO_LINGER' =&gt; null,  <br>'SO_SNDBUF' =&gt; null,  <br>'SO_RCVBUF' =&gt; null,  <br>'TCP_NODELAY' =&gt; 1  <br>&lt;/pre&gt;    </p><p>$ssl=[];  </p><p>使用ssl连接时的选项， </p><p>可使用的选项: <a href="http://php.net/manual/en/context.ssl.php">http://php.net/manual/en/context.ssl.php</a>  </p><p>php ssl使用方法： <a href="https://www.devdungeon.com/content/how-use-ssl-sockets-php">https://www.devdungeon.com/content/how-use-ssl-sockets-php</a>  <br>默认选项: <br>&lt;pre&gt;<br>'enabled' =&gt; false, //是否启用ssl<br>'verify_peer' =&gt; false, //是否验证服务器证书<br>'verify_perr_name' =&gt; false, //是否验证对方主机名<br>'allow_self_signaed' =&gt; true, //是否允许自签名的证书<br>&lt;/pre&gt;</p><p>public string $target;   <br>//连接目标, 传输层协议/目标地址/端口三部分组成，如果使用ipv6, ip部分必须使用方括号括起来。<br><a href="http://php.net/manual/en/transports.inet.php">http://php.net/manual/en/transports.inet.php</a><br><a href="http://php.net/manual/en/transports.unix.php">http://php.net/manual/en/transports.unix.php</a></p><p>public int $timeout=30;  <br>连接超时秒数, 0表示使用系统默认超时值。</p><p>public int $max_send_buffer_size=10485760;  <br>单个连接的发送缓冲区字节数，如果缓冲区内容超出此值，Server::ON_BUFFER_FULL事件将被激活，并且开始丢弃最新的发送数据包。</p><p>public $read_buffer_size = 65536;  <br>接收数据时，每次读取的字节数，一般无须修改此值</p><p>public string|array|Parser $parser;  <br>协议解析器组件配置信息，可以是解析器类名、配置数组、Parser对象。</p><p>public string $peer;  <br>连接对端的地址和端口，分号连接</p><p>public string $local;  <br>本地地址和端口，只有在连接建立后才有意义。</p><p><strong>方法</strong>  <br>public function pipe(Connection $target);  <br>为当前连接设置管道连接，常用来作代理、数据库连接池等。<br>StreamClient代表了beyod与后端服务器的连接，而Connection为客户端与beyod之间的连接，客户端的任何数据包，将原样通过StreamClient发送给后端服务器，而后端服务器返回的数据，将通过Connection发送给客户端，从而实现代理转发机制。</p><p>public function unpipe(void);  <br>同上，取消管道连接</p><p>public void function setAttribute(string $name, $value=null);  <br>为当前连接设置一个属性，参数分别为属性名称，属性值，null表示删除指定的属性名。例如我们可以在连接建立之后，将客户端的验证状态，客户端参数保存在连接对象上，后续交互中就可以通过getAttribute($name)取得此属性值。</p><p>public mixed function getAttribute($name, $default = null);  <br>同上，读取指定的属性的值</p><p>public bool function hasAttribute($name);   <br>判断指定的属性值是否存在</p><p>public bool function getIsClosed();  <br>判断当前连接是否为关闭状态</p><p>public bool function getIsEstablished();  <br>判断当前连接是否为已经建立状态</p><p>public function __toString(){  <br>  return "$this-&gt;id $this-&gt;peer   $this-&gt;local";  <br>}</p><p>__toString魔术方法</p><p>public int getId();  <br>当前连接的id, beyod使用id复用机制，不存在连接id持续增长耗尽的问题。</p><p>public StreamClient connect($renew=false)  <br>开始连接，$renew:是否强制重新连接，否则只有在连接未建立或关闭的情况下才重新连接</p><p>public StreamClient function prepare()  <br>针对udp，使用prepare而不是connect, 为了保持字面上的意义（虽然本质上是调用了connect）。</p><p>public string getScheme()  <br>获取传输层协议</p><p>public bool isSSL()  <br>判断当前连接是否启用SSL</p><p>public bool isTCP() 是否为tcp  </p><p>public bool isUDP() 是否为udp/udg  </p><p>public function isUnix()  是否为unix套接字</p><p>public int send(mixed $message, $raw=false)  <br>向服务器发送数据, $raw:是否只发送原始字节流而不使用parser封包。</p><p>public void close()  <br>主动关闭当前连接 </p><p>public float getResponseAt()  <br>获取服务器最近响应数据到达时间戳</p><p>public float getConnectAt()  <br>最近一次连接建立时间戳</p><table><thead><tr><th>事件</th><th>功能</th><th>参数类型</th></tr></thead><tbody><tr><td>Server::ON_CONNECT_FAILED</td><td>连接失败</td><td>ErrorEvent</td></tr><tr><td>Server::ON_CLOSE</td><td>连接被动或主动关闭</td><td>CloseEvent</td></tr><tr><td>Server::ON_BEFORE_CONNECT</td><td>准备连接前</td><td>IOEvent</td></tr><tr><td>Server::ON_CONNECT</td><td>连接建立成功</td><td>IOEvent</td></tr><tr><td>Server::ON_BAD_PACKET</td><td>收到错误的数据包</td><td>ErrorEvent</td></tr><tr><td>Server::ON_MESSAGE</td><td>收到完整数据包</td><td>MessageEvent</td></tr><tr><td>Server::ON_BUFFER_FULL</td><td>缓冲区已满</td><td>IOEvent</td></tr><tr><td>Server::ON_BUFFER_DRAIN</td><td>缓冲区已空</td><td>IOEvent</td></tr></tbody></table>  </div>
+  <script src="assets/js/jquery.min.js"></script>
+  <script src="assets/js/popper.min.js"></script>
+  <script src="assets/js/bootstrap.min.js"></script>
+
+<script>
+$(function(){
+  var url = self.location;
+  parent.$('a').removeClass('font-weight-bold');
+  parent.$('a[href="22.html"]').addClass('font-weight-bold');
+});
+</script>  
+  
+  </body>
+</html>

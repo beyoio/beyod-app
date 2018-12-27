@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="zh" class="h-100">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+    <link rel="stylesheet" href="assets/css/bootstrap.min.css">
+    <link rel="stylesheet" href="assets/css/style.css">
+
+    <title> Master进程</title>
+  </head>
+  <body class="h-100">
+  <div class="container-fluid h-100 p-2">
+  	<h1>Master进程</h1>
+  	<p>Master进程即为主进程，主要作用：  <br>A. 创建监听套接字并派生给worker进程(beyod支持reuse port特性，即多个进程监听同一个端口，在操作系统内核级别实现负载均衡，Linux kernel 3.9开始支持这个特性， 在这种情况下，监听套接字的创建由worker完成)。  </p><p>B. 负责生成worker进程。  </p><p>C. 接收外部信号，实现worker进程平滑重启、服务退出指令。    </p><p>D. 当worker进程异常退出时，立即派生新的worker接替其工作，从而保证整体架构的高可用性。  </p><p>==E. master不处理任何业务功能，也不接受任何客户端连接请求，正常情况下，它没有崩溃的可能。==</p><p>F. 为了保证Master的稳定，beyod不支持在Master进程空间内编程——也就是说，所有的业务代码是在worker进程空间中运行。</p>  </div>
+  <script src="assets/js/jquery.min.js"></script>
+  <script src="assets/js/popper.min.js"></script>
+  <script src="assets/js/bootstrap.min.js"></script>
+
+<script>
+$(function(){
+  var url = self.location;
+  parent.$('a').removeClass('font-weight-bold');
+  parent.$('a[href="70.html"]').addClass('font-weight-bold');
+});
+</script>  
+  
+  </body>
+</html>

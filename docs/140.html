@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="zh" class="h-100">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+    <link rel="stylesheet" href="assets/css/bootstrap.min.css">
+    <link rel="stylesheet" href="assets/css/style.css">
+
+    <title> 连接状态检测</title>
+  </head>
+  <body class="h-100">
+  <div class="container-fluid h-100 p-2">
+  	<h1>连接状态检测</h1>
+  	<p>tcp连接建立后，中间链路或对端节点异常崩溃或未正常关闭，对端无法感知,必须待操作系统层探测失败后才会延迟关闭，对此种连接，有可能网络抖动，也有可能是对方已经彻底崩溃，无法恢复，所以需要有连接探测机制：</p>
+  	<ol><li>有网络抖动现象的连接，要尽可能恢复其状态。</li>
+  	<li>对无法恢复的连接，要及时清理，避免无效资源占用。</li>
+  	</ol>
+  	<p>对此，有两种方案可配合使用：</p>
+  	<ol><li>Linux提供了Keepalive机制，当连接空闲一定时间后，即向对方发送检测包，当连续N次无响应后，就切断连接。</li>
+  	</ol>
+  	<pre><code>tcp_keepalive_probes：探测次数
+tcp_keepalive_time   探测的超时
+tcp_keepalive_intvl 探测间隔
+
+
+tcp_keepalive_probes = 3;
+tcp_keepalive_time   = 30;
+tcp_keepalive_intvl = 1;
+</code></pre>
+<p>对于一个已经建立的tcp连接。如果在keepalive_time时间内双方没有任何的数据包传输，则开启keepalive功能的一端将发送 eepalive数据包，若没有收到应答，则每隔keepalive_intvl时间再发送该数据包，发送keepalive_probes次。
+一直没有 收到应答，则发送rst包关闭连接。若收到应答，则将计时器清零。例如：</p>
+
+<p>
+意思就是说对于tcp连接，如果连接上有数据来往就不会触发keepalive,但是超过30秒没有数据来往，则keepalive开始工作：发送探测包，收到响应则认为连接正常，结束探测；
+</p>
+
+如果没有响应就每隔1秒发探测包，一共发送3次，3次后仍没有响应，
+就关闭连接，也就是从连接异常断开到检测完成最多需要33秒。
+<p>可以在/etc/sysctl.conf中设置以上参数。同时这需要socket启用keepalive（beyod默认已启用）。</p>
+
+<h5>beyod实现的方式</h5>
+<p>beyod自身提供了检测机制，当客户端超过一定时间没有发送数据包时，就切断连接，释放资源。为此，需要为listener定义两个值：</p>
+
+<p><strong>keepalive_timeout</strong>  
+<br>当客户端超过此值的秒数没有发送数据包，连接视为空闲或异常， 默认为7200秒。</p>
+<p><strong>keepalive_interval</strong><br>检查的间隔秒数，默认为723秒。</p>
+<p>每隔723秒检查当前侦听器的所有连接的状态，如果连接超过7200秒没有发送数据包，视为空闲或异常，连接被强制断开，资源释放。</p>
+</div>
+  <script src="assets/js/jquery.min.js"></script>
+  <script src="assets/js/popper.min.js"></script>
+  <script src="assets/js/bootstrap.min.js"></script>
+
+<script>
+$(function(){
+  var url = self.location;
+  parent.$('a').removeClass('font-weight-bold');
+  parent.$('a[href="140.html"]').addClass('font-weight-bold');
+});
+</script>  
+  
+  </body>
+</html>

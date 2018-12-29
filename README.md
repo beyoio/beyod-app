@@ -1,4 +1,6 @@
 # beyod app项目模板
+beyod是框架核心库，一般你无须安装此。
+beyod-app是项目模板，请安装此项目以进行开发。
 
 ### 一、安装指南, 使用以下任何一个方法均可安装beyod-app项目结构
 1. 使用composer安装
@@ -25,7 +27,7 @@ php beyod.php server/start
 
 ### 三、参考文档
 
-http://www.beyod.net/docs
+见 beyod-app/docs/index.html
 
 
 ## beyod: 一个高性能分布式、事件驱动、异步非阻塞php socket网络应用框架
